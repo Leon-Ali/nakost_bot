@@ -1,6 +1,6 @@
 from aiogram import Bot, Dispatcher
 
-from settings.app import AppConfig
+from settings import AppConfig
 
 
 def initialize_app() -> Dispatcher:
