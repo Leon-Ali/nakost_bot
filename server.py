@@ -10,8 +10,7 @@ app = initialize_app()
 @app.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
     """Sends welcome and creates user"""
-    todo_service = TodoService()
-    await todo_service.create_user(user_id=message.from_user.id)
+    await TodoService.create_user(user_id=message.from_user.id)
     await message.reply(
         "Organizer bot\n\n"
         "Create task: /add\n"
