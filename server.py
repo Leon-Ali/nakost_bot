@@ -2,6 +2,7 @@ from aiogram import executor, types
 
 from create_app import initialize_app
 from services import TodoService
+from repositories import UsersRepository
 
 
 app = initialize_app()
@@ -10,7 +11,7 @@ app = initialize_app()
 @app.message_handler(commands=['start', 'help'])
 async def send_welcome(message: types.Message):
     """Sends welcome and creates user"""
-    await TodoService.create_user(user_id=message.from_user.id)
+    await TodoService.create_user(user_id=message.from_user.id, repo=UsersRepository)
     await message.reply(
         "Organizer bot\n\n"
         "Create task: /add\n"
