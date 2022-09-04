@@ -1,11 +1,10 @@
 import aiohttp
 from settings import TodoServiceConfig
 
+from .base_repository import BaseRepository
 
-class UsersRepository:
 
-    def __init__(self):
-        self.headers = {'X-API-KEY': TodoServiceConfig.API_TOKEN, 'Content-Type': 'application/json'}
+class UsersRepository(BaseRepository):
 
     async def create_user(self, user_id: str):
         url = TodoServiceConfig.get_user_create_url()
