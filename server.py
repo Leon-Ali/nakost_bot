@@ -9,7 +9,7 @@ from aiogram_calendar import simple_cal_callback, SimpleCalendar
 
 from create_app import initialize_app
 from services import TodoService
-from repositories import UsersRepository
+from repositories import UsersRepository, TasksRepository
 
 
 app = initialize_app()
@@ -55,9 +55,16 @@ async def add_task_description(message: types.Message, state: FSMContext):
 
 
 @app.message_handler(Text(equals=['Сегодняшняя дата'], ignore_case=True), state=FSMTask.date_choose)
-async def today_handler(message: types.Message, state: FSMContext):
-    date = message.date.date()
-    await message.reply('You chose today')
+async def create_today_task(message: types.Message, state: FSMContext):
+    tasks_repo = TasksRepository()
+    async with state.proxy() as data:
+        await TodoService.create_task(
+            user_id=message.from_user.id,
+            description=data['task_description'],
+            date=message.date.date(),
+            repo=tasks_repo,
+        )
+    await message.reply(f'Задача \"{data["task_description"]}\" добавлена')
     await state.finish()
 
 
@@ -71,6 +78,7 @@ async def choose_task_date(message: types.Message):
 @app.callback_query_handler(simple_cal_callback.filter(), state=FSMTask.date_confirm)
 async def process_simple_calendar(callback_query: types.CallbackQuery, callback_data: CallbackData, state: FSMContext):
     selected, date = await SimpleCalendar().process_selection(callback_query, callback_data)
+    print(callback_data)
     if selected:
         await callback_query.message.reply(
             f'You selected {date.strftime("%d/%m/%Y")}',
