@@ -94,7 +94,13 @@ async def process_simple_calendar(callback_query: types.CallbackQuery, callback_
 @app.message_handler(commands=['today'])
 async def today_tasks(message: types.Message):
     """Sends today tasks"""
-    await message.answer()
+    tasks_repo = TasksRepository()
+    tasks = await TodoService.get_tasks(
+        user_id=message.from_user.id,
+        date=message.date.date(),
+        repo=tasks_repo,
+    )
+    await message.answer('tasks retrieved')
 
 
 @app.message_handler(commands=['date'])

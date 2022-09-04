@@ -23,5 +23,16 @@ class TodoService:
             date=date,
         )
 
+    @staticmethod
+    async def get_tasks(
+            user_id: str,
+            date: datetime.date,
+            repo,
+    ) -> None:
+        return await repo.get_tasks(
+            user_id=user_id,
+            date=date,
+        )
+
 
 
