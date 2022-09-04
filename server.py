@@ -1,7 +1,11 @@
 from aiogram import executor, types
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram.dispatcher.filters import Text
+
+from aiogram.utils.callback_data import CallbackData
+
+from aiogram_calendar import simple_cal_callback, SimpleCalendar
 
 from create_app import initialize_app
 from services import TodoService
@@ -13,7 +17,12 @@ app = initialize_app()
 
 class FSMTask(StatesGroup):
     task_description = State()
-    date = State()
+    date_choose = State()
+    date_confirm = State()
+
+
+start_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+start_kb.row('Календарь', 'Сегодняшняя дата')
 
 
 @app.message_handler(commands=['start', 'help'])
@@ -42,17 +51,30 @@ async def add_task_description(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['task_description'] = message.text
     await FSMTask.next()
-    await message.reply('Выберите дату для задачи')
+    await message.reply('Выберите дату для задачи', reply_markup=start_kb)
 
 
-@app.message_handler(state=FSMTask.date)
-async def add_task_date(message: types.Message, state: FSMContext):
+@app.message_handler(Text(equals=['Сегодняшняя дата'], ignore_case=True), state=FSMTask.date_choose)
+async def today_handler(message: types.Message, state: FSMContext):
+    date = message.date.date()
+    await message.reply('You chose today')
+    await state.finish()
+
+
+@app.message_handler(Text(equals=['Календарь'], ignore_case=True), state=FSMTask.date_choose)
+async def choose_task_date(message: types.Message):
     """Adds task date"""
-    async with state.proxy() as data:
-        data['date'] = message.date
+    await FSMTask.next()
+    await message.reply("Выберите дату: ", reply_markup=await SimpleCalendar().start_calendar())
 
-    async with state.proxy() as data:
-        await message.reply(str(data))
+
+@app.callback_query_handler(simple_cal_callback.filter(), state=FSMTask.date_confirm)
+async def process_simple_calendar(callback_query: types.CallbackQuery, callback_data: CallbackData, state: FSMContext):
+    selected, date = await SimpleCalendar().process_selection(callback_query, callback_data)
+    if selected:
+        await callback_query.message.reply(
+            f'You selected {date.strftime("%d/%m/%Y")}',
+        )
     await state.finish()
 
 
