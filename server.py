@@ -78,11 +78,16 @@ async def choose_task_date(message: types.Message):
 @app.callback_query_handler(simple_cal_callback.filter(), state=FSMTask.date_confirm)
 async def process_simple_calendar(callback_query: types.CallbackQuery, callback_data: CallbackData, state: FSMContext):
     selected, date = await SimpleCalendar().process_selection(callback_query, callback_data)
-    print(callback_data)
+    tasks_repo = TasksRepository()
     if selected:
-        await callback_query.message.reply(
-            f'You selected {date.strftime("%d/%m/%Y")}',
-        )
+        async with state.proxy() as data:
+            await TodoService.create_task(
+                user_id=callback_query.from_user.id,
+                description=data['task_description'],
+                date=date.date(),
+                repo=tasks_repo,
+            )
+            await callback_query.message.reply(f'Задача \"{data["task_description"]}\" добавлена')
     await state.finish()
 
 
