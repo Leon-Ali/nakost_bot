@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List, Dict
 
 
 class TodoService:
@@ -28,7 +29,7 @@ class TodoService:
             user_id: str,
             date: datetime.date,
             repo,
-    ) -> None:
+    ) -> List[Dict]:
         return await repo.get_tasks(
             user_id=user_id,
             date=date,
