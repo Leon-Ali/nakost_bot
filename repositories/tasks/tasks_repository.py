@@ -3,11 +3,13 @@ from typing import List
 
 from settings import TodoServiceConfig
 
-from .base_repository import BaseRepository
+from repositories.base_repository import BaseRepository
 from constants import HTTP
 
+from .abstract_repository import AbstractTasksRepository
 
-class TasksRepository(BaseRepository):
+
+class TasksRepository(AbstractTasksRepository, BaseRepository):
 
     async def create_task(
             self,

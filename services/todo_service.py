@@ -1,13 +1,16 @@
 from datetime import datetime
 from typing import List, Dict
 
+from repositories.users.abstract_repository import AbstractUserRepository
+from repositories.tasks.abstract_repository import AbstractTasksRepository
+
 
 class TodoService:
 
     @staticmethod
     async def create_user(
             user_id: str,
-            repo,
+            repo: AbstractUserRepository,
     ) -> None:
         await repo.create_user(user_id)
 
@@ -16,7 +19,7 @@ class TodoService:
             user_id: str,
             description: str,
             date: datetime.date,
-            repo,
+            repo: AbstractTasksRepository,
     ) -> None:
         await repo.create_task(
             user_id=user_id,
@@ -28,7 +31,7 @@ class TodoService:
     async def get_tasks(
             user_id: str,
             date: datetime.date,
-            repo,
+            repo: AbstractTasksRepository,
             completed=False,
     ) -> List[Dict]:
         return await repo.get_tasks(
@@ -40,7 +43,7 @@ class TodoService:
     @staticmethod
     async def complete_tasks(
             ids: List[str],
-            repo,
+            repo: AbstractTasksRepository,
     ) -> None:
         await repo.complete_tasks(ids=ids)
 

@@ -1,2 +1,2 @@
-from .users_repository import UsersRepository
-from .tasks_repository import TasksRepository
+from repositories.users.users_repository import UsersRepository
+from repositories.tasks.tasks_repository import TasksRepository
