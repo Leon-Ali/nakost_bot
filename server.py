@@ -102,8 +102,11 @@ async def today_tasks(message: types.Message):
         date=message.date.date(),
         repo=tasks_repo,
     )
-    tasks_data = [(task['description'], task['id']) for task in tasks]
-    await message.reply('Задачи на сегодня', reply_markup=await MultiSelect().create(tasks_data))
+    if tasks:
+        tasks_data = [(task['description'], task['id']) for task in tasks]
+        await message.reply('Задачи на сегодня', reply_markup=await MultiSelect().create(tasks_data))
+    else:
+        await message.reply('Задач на сегодня нет')
 
 
 @app.message_handler(commands=['date'])
@@ -116,6 +119,13 @@ async def tasks_by_date(message: types.Message):
 async def complete_tasks(callback_query: types.CallbackQuery, callback_data: CallbackData):
     """Completes tasks"""
     data = await MultiSelect().process_selection(callback_query, callback_data)
+    if data:
+        tasks_repo = TasksRepository()
+        await TodoService.complete_tasks(
+            ids=data,
+            repo=tasks_repo,
+        )
+        await callback_query.message.reply('Выбранные задачи завершены')
 
 
 if __name__ == '__main__':

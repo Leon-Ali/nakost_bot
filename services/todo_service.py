@@ -37,5 +37,11 @@ class TodoService:
             completed=completed,
         )
 
+    @staticmethod
+    async def complete_tasks(
+            ids: List[str],
+            repo,
+    ) -> None:
+        await repo.complete_tasks(ids=ids)
 
 

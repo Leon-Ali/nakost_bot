@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from settings import TodoServiceConfig
 
@@ -37,4 +38,13 @@ class TasksRepository(BaseRepository):
         }
         response = await self.request(url=url, params=query_params)
         return response
+
+    async def complete_tasks(
+            self,
+            ids: List[str],
+    ):
+        url = TodoServiceConfig.get_task_comlete_url()
+        data = {'ids': ids}
+        await self.request(url=url, data=data, method=HTTP.POST)
+
 
