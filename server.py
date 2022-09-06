@@ -22,8 +22,16 @@ class FSMTask(StatesGroup):
     date_confirm = State()
 
 
-start_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
-start_kb.row('Календарь', 'Сегодняшняя дата')
+start_kb = types.InlineKeyboardMarkup(row_width=2)
+
+text_and_data = (
+        ('Календарь', 'календарь'),
+        ('Сегодняшняя дата', 'сегодняшняя дата'),
+    )
+
+row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+
+start_kb.row(*row_btns)
 
 
 @app.message_handler(commands=['start', 'help'])
@@ -56,25 +64,28 @@ async def add_task_description(message: types.Message, state: FSMContext):
     await message.reply('Выберите дату для задачи', reply_markup=start_kb)
 
 
-@app.message_handler(Text(equals=['Сегодняшняя дата'], ignore_case=True), state=FSMTask.date_choose)
-async def create_today_task(message: types.Message, state: FSMContext):
+@app.callback_query_handler(Text(equals=['Сегодняшняя дата'], ignore_case=True), state=FSMTask.date_choose)
+async def create_today_task(query: types.CallbackQuery, state: FSMContext):
     tasks_repo = TasksRepository()
     async with state.proxy() as data:
         await TodoService.create_task(
-            user_id=message.from_user.id,
+            user_id=query.message.from_user.id,
             description=data['task_description'],
-            date=message.date.date(),
+            date=query.message.date.date(),
             repo=tasks_repo,
         )
-    await message.reply(f'Задача \"{data["task_description"]}\" добавлена')
+    await query.message.reply(
+        f'Задача \"{data["task_description"]}\" добавлена',
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
     await state.finish()
 
 
-@app.message_handler(Text(equals=['Календарь'], ignore_case=True), state=FSMTask.date_choose)
-async def choose_task_date(message: types.Message):
+@app.callback_query_handler(Text(equals=['Календарь'], ignore_case=True), state=FSMTask.date_choose)
+async def choose_task_date(query: types.CallbackQuery):
     """Adds task date"""
     await FSMTask.next()
-    await message.reply("Выберите дату: ", reply_markup=await SimpleCalendar().start_calendar())
+    await query.message.reply("Выберите дату: ", reply_markup=await SimpleCalendar().start_calendar())
 
 
 @app.callback_query_handler(simple_cal_callback.filter(), state=FSMTask.date_confirm)
