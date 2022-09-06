@@ -89,7 +89,10 @@ async def process_simple_calendar(callback_query: types.CallbackQuery, callback_
                 date=date.date(),
                 repo=tasks_repo,
             )
-            await callback_query.message.reply(f'Задача \"{data["task_description"]}\" добавлена')
+            await callback_query.message.reply(
+                f'Задача \"{data["task_description"]}\" добавлена',
+                reply_markup=types.ReplyKeyboardRemove(),
+            )
     await state.finish()
 
 
