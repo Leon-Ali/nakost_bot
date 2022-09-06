@@ -22,7 +22,7 @@ class FSMTask(StatesGroup):
     date_confirm = State()
 
 
-start_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+start_kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
 start_kb.row('Календарь', 'Сегодняшняя дата')
 
 
