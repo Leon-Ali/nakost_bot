@@ -29,10 +29,12 @@ class TodoService:
             user_id: str,
             date: datetime.date,
             repo,
+            completed=False,
     ) -> List[Dict]:
         return await repo.get_tasks(
             user_id=user_id,
             date=date,
+            completed=completed,
         )
 
 

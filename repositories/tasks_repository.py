@@ -26,11 +26,14 @@ class TasksRepository(BaseRepository):
             self,
             user_id: str,
             date: datetime.date,
+            completed=False,
     ):
         url = TodoServiceConfig.get_task_create_url()
         query_params = {
             'user': user_id,
             'date': str(date),
+            'finished': str(completed),
+
         }
         response = await self.request(url=url, params=query_params)
         return response
