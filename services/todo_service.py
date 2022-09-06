@@ -29,11 +29,19 @@ class TodoService:
             user_id: str,
             date: datetime.date,
             repo,
+            completed=False,
     ) -> List[Dict]:
         return await repo.get_tasks(
             user_id=user_id,
             date=date,
+            completed=completed,
         )
 
+    @staticmethod
+    async def complete_tasks(
+            ids: List[str],
+            repo,
+    ) -> None:
+        await repo.complete_tasks(ids=ids)
 
 

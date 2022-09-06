@@ -1,5 +1,3 @@
-from typing import List
-
 from aiogram import executor, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -12,6 +10,7 @@ from aiogram_calendar import simple_cal_callback, SimpleCalendar
 from create_app import initialize_app
 from services import TodoService
 from repositories import UsersRepository, TasksRepository
+from helpers.keyboards import MultiSelect, multiselect_callback
 
 
 app = initialize_app()
@@ -25,52 +24,6 @@ class FSMTask(StatesGroup):
 
 start_kb = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 start_kb.row('Календарь', 'Сегодняшняя дата')
-
-
-multiselect_callback = CallbackData('multiselect', 'item')
-
-
-class MultiSelect:
-
-    SUBMIT_BTN_NAME = 'завершить'
-
-    async def create(self, items: List):
-        inline_kb = types.InlineKeyboardMarkup(row_width=1)
-        for item in items:
-            inline_kb.insert(types.InlineKeyboardButton(
-                item[0],
-                callback_data=multiselect_callback.new(item[1])
-            ))
-        inline_kb.insert(types.InlineKeyboardButton(
-            self.SUBMIT_BTN_NAME,
-            callback_data=multiselect_callback.new(self.SUBMIT_BTN_NAME)
-        ))
-        return inline_kb
-
-    async def process_selection(self, query: types.CallbackQuery, data: CallbackData) -> List:
-        checked_symbol = '✓'
-        items = []
-
-        for item in query['message']['reply_markup']['inline_keyboard']:
-
-            item_key = item[0]['text']
-            item_value = item[0]['callback_data'].split(':')[1]
-
-            if item_key == self.SUBMIT_BTN_NAME:
-                continue
-            elif item_key.startswith(checked_symbol) and data['item'] == item_value:
-                items.append((item_key.removeprefix(checked_symbol), item_value))
-            elif item_value == data['item']:
-                items.append((checked_symbol + ' ' + item_key, item_value))
-            else:
-                items.append((item_key, item_value))
-
-        if data['item'] == self.SUBMIT_BTN_NAME:
-            await query.message.delete_reply_markup()
-            return_data = [int(item[1]) for item in items if item[0].startswith(checked_symbol)]
-            return return_data
-
-        await query.message.edit_reply_markup(await self.create(items))
 
 
 @app.message_handler(commands=['start', 'help'])
@@ -136,7 +89,10 @@ async def process_simple_calendar(callback_query: types.CallbackQuery, callback_
                 date=date.date(),
                 repo=tasks_repo,
             )
-            await callback_query.message.reply(f'Задача \"{data["task_description"]}\" добавлена')
+            await callback_query.message.reply(
+                f'Задача \"{data["task_description"]}\" добавлена',
+                reply_markup=types.ReplyKeyboardRemove(),
+            )
     await state.finish()
 
 
@@ -149,8 +105,11 @@ async def today_tasks(message: types.Message):
         date=message.date.date(),
         repo=tasks_repo,
     )
-    tasks_data = [(task['description'], task['id']) for task in tasks]
-    await message.reply('Задачи на сегодня', reply_markup=await MultiSelect().create(tasks_data))
+    if tasks:
+        tasks_data = [(task['description'], task['id']) for task in tasks]
+        await message.reply('Задачи на сегодня', reply_markup=await MultiSelect().create(tasks_data))
+    else:
+        await message.reply('Задач на сегодня нет')
 
 
 @app.message_handler(commands=['date'])
@@ -163,6 +122,13 @@ async def tasks_by_date(message: types.Message):
 async def complete_tasks(callback_query: types.CallbackQuery, callback_data: CallbackData):
     """Completes tasks"""
     data = await MultiSelect().process_selection(callback_query, callback_data)
+    if data:
+        tasks_repo = TasksRepository()
+        await TodoService.complete_tasks(
+            ids=data,
+            repo=tasks_repo,
+        )
+        await callback_query.message.reply('Выбранные задачи завершены')
 
 
 if __name__ == '__main__':
