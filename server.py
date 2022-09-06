@@ -66,7 +66,10 @@ async def create_today_task(message: types.Message, state: FSMContext):
             date=message.date.date(),
             repo=tasks_repo,
         )
-    await message.reply(f'Задача \"{data["task_description"]}\" добавлена')
+    await message.reply(
+        f'Задача \"{data["task_description"]}\" добавлена',
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
     await state.finish()
 
 
