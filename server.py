@@ -13,7 +13,7 @@ from repositories import UsersRepository, TasksRepository
 from helpers.keyboards import MultiSelect, multiselect_callback
 
 
-app = initialize_app()
+app, bot = initialize_app()
 
 
 class FSMTask(StatesGroup):
@@ -43,8 +43,7 @@ async def send_welcome(message: types.Message):
         "Organizer bot\n\n"
         "Create task: /add\n"
         "Today tasks: /today\n"
-        "Tasks by date: /date\n"
-        "Test: /test"
+        "Tasks by date: /date"
     )
 
 
@@ -52,7 +51,7 @@ async def send_welcome(message: types.Message):
 async def add_task(message: types.Message):
     """Adds new task"""
     await FSMTask.task_description.set()
-    await message.reply('Введите имя задачи')
+    await bot.send_message(chat_id=message.chat.id, text='Введите описание задачи')
 
 
 @app.message_handler(state=FSMTask.task_description)
@@ -61,7 +60,7 @@ async def add_task_description(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['task_description'] = message.text
     await FSMTask.next()
-    await message.reply('Выберите дату для задачи', reply_markup=start_kb)
+    await bot.send_message(chat_id=message.chat.id, text='Выберите дату для задачи', reply_markup=start_kb)
 
 
 @app.callback_query_handler(Text(equals=['Сегодняшняя дата'], ignore_case=True), state=FSMTask.date_choose)
@@ -74,8 +73,9 @@ async def create_today_task(query: types.CallbackQuery, state: FSMContext):
             date=query.message.date.date(),
             repo=tasks_repo,
         )
-    await query.message.reply(
-        f'Задача \"{data["task_description"]}\" добавлена',
+    await bot.send_message(
+        chat_id=query.message.chat.id,
+        text=f'Задача \"{data["task_description"]}\" добавлена',
         reply_markup=types.ReplyKeyboardRemove(),
     )
     await state.finish()
@@ -85,11 +85,15 @@ async def create_today_task(query: types.CallbackQuery, state: FSMContext):
 async def choose_task_date(query: types.CallbackQuery):
     """Adds task date"""
     await FSMTask.next()
-    await query.message.reply("Выберите дату: ", reply_markup=await SimpleCalendar().start_calendar())
+    await bot.send_message(
+        chat_id=query.message.chat.id,
+        text="Выберите дату: ",
+        reply_markup=await SimpleCalendar().start_calendar(),
+    )
 
 
 @app.callback_query_handler(simple_cal_callback.filter(), state=FSMTask.date_confirm)
-async def process_simple_calendar(callback_query: types.CallbackQuery, callback_data: CallbackData, state: FSMContext):
+async def process_calendar_date(callback_query: types.CallbackQuery, callback_data: CallbackData, state: FSMContext):
     selected, date = await SimpleCalendar().process_selection(callback_query, callback_data)
     tasks_repo = TasksRepository()
     if selected:
@@ -100,15 +104,16 @@ async def process_simple_calendar(callback_query: types.CallbackQuery, callback_
                 date=date.date(),
                 repo=tasks_repo,
             )
-            await callback_query.message.reply(
-                f'Задача \"{data["task_description"]}\" добавлена',
+            await bot.send_message(
+                chat_id=callback_query.message.chat.id,
+                text=f'Задача \"{data["task_description"]}\" добавлена',
                 reply_markup=types.ReplyKeyboardRemove(),
             )
     await state.finish()
 
 
 @app.message_handler(commands=['today'])
-async def today_tasks(message: types.Message):
+async def get_today_tasks(message: types.Message):
     """Sends today tasks"""
     tasks_repo = TasksRepository()
     tasks = await TodoService.get_tasks(
@@ -124,7 +129,7 @@ async def today_tasks(message: types.Message):
 
 
 @app.message_handler(commands=['date'])
-async def tasks_by_date(message: types.Message):
+async def get_tasks_by_date(message: types.Message):
     """Sends tasks by given date"""
     await message.answer()
 
